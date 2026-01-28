@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SkillMeasure Starter</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>SkillMeasure — Starter</h1>
+    <p id="status">Checking server...</p>
+    <button id="ping">Ping API</button>
+  </main>
+  <script>
+    async function ping(){
+      const res = await fetch('/api/ping').then(r=>r.json());
+      document.getElementById('status').textContent = 'API: ' + JSON.stringify(res);
+    }
+    document.getElementById('ping').addEventListener('click', ping);
+    ping();
+  </script>
+</body>
+</html>

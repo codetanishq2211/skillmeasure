@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Skill Measure - Coding Round</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="container">
+  <h2 id="challenge-title">Loading Coding Challenge...</h2>
+  <p id="challenge-description"></p>
+
+  <div class="code-editor">
+    <h3>Write Your Code:</h3>
+    <textarea id="code-input" placeholder="Write your solution here..."></textarea>
+  </div>
+
+  <div class="test-cases">
+    <h3>Test Cases:</h3>
+    <div id="test-cases-container"></div>
+  </div>
+
+  <div class="buttons">
+    <button onclick="runCode()">Run Code</button>
+    <button onclick="nextChallenge()">Next Challenge</button>
+    <button onclick="showSolution()">Show Solution</button>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<script>
+let challenges = [];
+let currentChallengeIndex = 0;
+let skills = [];
+
+window.onload = () => {
+  // Get data from localStorage
+  const storedChallenges = localStorage.getItem("coding_challenges");
+  const storedSkills = localStorage.getItem("skills");
+
+  challenges = JSON.parse(storedChallenges || "[]");
+  skills = JSON.parse(storedSkills || "[]");
+
+  if (challenges.length === 0) {
+    document.getElementById("challenge-title").innerText = "⚠️ No Coding Challenges Available";
+    document.getElementById("challenge-description").innerText = "No coding challenges were generated for your detected skills. This might happen if your skills are not in our challenge database.";
+    document.querySelector(".code-editor").style.display = "none";
+    document.querySelector(".test-cases").style.display = "none";
+    document.querySelector(".buttons").style.display = "none";
+    return;
+  }
+
+  showChallenge();
+};
+
+function showChallenge() {
+  if (currentChallengeIndex >= challenges.length) {
+    document.getElementById("challenge-title").innerText = "🎉 All Coding Challenges Complete!";
+    document.getElementById("challenge-description").innerText = "Great job! You've completed the coding round.";
+    document.querySelector(".code-editor").style.display = "none";
+    document.querySelector(".test-cases").style.display = "none";
+    document.querySelector(".buttons").style.display = "none";
+    return;
+  }
+
+  const challenge = challenges[currentChallengeIndex];
+  document.getElementById("challenge-title").innerText = challenge.title;
+  document.getElementById("challenge-description").innerText = challenge.description;
+
+  // Set starter code
+  document.getElementById("code-input").value = challenge.starter_code;
+
+  // Show test cases
+  const testCasesContainer = document.getElementById("test-cases-container");
+  testCasesContainer.innerHTML = "";
+  challenge.test_cases.forEach((testCase, index) => {
+    const testDiv = document.createElement("div");
+    testDiv.className = "test-case";
+    testDiv.innerHTML = `
+      <strong>Test ${index + 1}:</strong><br>
+      Input: ${testCase.input}<br>
+      Expected: ${testCase.expected}
+    `;
+    testCasesContainer.appendChild(testDiv);
+  });
+
+  document.getElementById("output").innerHTML = "";
+}
+
+function runCode() {
+  const code = document.getElementById("code-input").value;
+  const outputDiv = document.getElementById("output");
+
+  if (!code.trim()) {
+    outputDiv.innerHTML = "<p style='color: #ff6b6b;'>⚠️ Please write some code first!</p>";
+    return;
+  }
+
+  // Basic validation for the current challenge
+  const challenge = challenges[currentChallengeIndex];
+  let isCorrect = false;
+  let feedback = "";
+
+  if (challenge.title === "Basic Programming Challenge") {
+    // Check for the default challenge
+    if (code.includes("return 'Hello, World!'") || code.includes('return "Hello, World!"')) {
+      isCorrect = true;
+      feedback = "<p style='color: #4ecdc4;'>✅ Correct! Your code looks good.</p>";
+    } else {
+      feedback = "<p style='color: #ff6b6b;'>❌ Not quite right. Try returning 'Hello, World!'</p>";
+    }
+  } else {
+    // For other challenges, provide basic feedback
+    const solution = challenge.solution.toLowerCase();
+    const userCode = code.toLowerCase();
+    
+    // Check if key elements are present
+    const hasFunction = userCode.includes(challenge.starter_code.split('(')[0].toLowerCase());
+    const hasReturn = userCode.includes('return');
+    
+    if (hasFunction && hasReturn) {
+      feedback = "<p style='color: #ffe66d;'>🤔 Your code structure looks good! Check the solution for details.</p>";
+    } else {
+      feedback = "<p style='color: #ff6b6b;'>❌ Check your function definition and return statement.</p>";
+    }
+  }
+
+  outputDiv.innerHTML = feedback + "<p>Your code:</p><pre>" + code + "</pre>";
+}
+
+function nextChallenge() {
+  currentChallengeIndex++;
+  showChallenge();
+}
+
+function showSolution() {
+  const challenge = challenges[currentChallengeIndex];
+  const outputDiv = document.getElementById("output");
+
+  outputDiv.innerHTML = "<p style='color: #ffe66d;'>💡 Solution:</p><pre>" + challenge.solution + "</pre>";
+}
+
+/* Particles */
+const particleBox = document.getElementById("particles");
+for (let i = 0; i < 40; i++) {
+  const p = document.createElement("div");
+  p.className = "particle";
+  p.style.left = Math.random() * 100 + "vw";
+  p.style.animationDuration = (5 + Math.random() * 12) + "s";
+  p.style.opacity = Math.random();
+  particleBox.appendChild(p);
+}
+</script>
+
+</body>
+</html>
