@@ -70,11 +70,15 @@ app.post("/upload-resume", upload.single("resume"), async (req, res) => {
     const stat = fs.statSync(absolutePath);
     console.log("📦 File size:", stat.size);
 
-    const response = await axios.post("http://127.0.0.1:8000/analyze", {
-      text: absolutePath
-    }, {
-      timeout: 30000 // 30 second timeout
-    });
+    const response = await axios.post(
+  "https://skillmeasure-python.onrender.com/analyze",
+  {
+    text: absolutePath
+  },
+  {
+    timeout: 30000
+  }
+);
 
     res.json(response.data);
 
