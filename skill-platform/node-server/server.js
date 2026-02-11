@@ -6,8 +6,12 @@ const path = require("path");
 const fs = require("fs");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: "https://codetanishq2211.github.io",
+  methods: ["GET","POST"],
+  allowedHeaders: ["Content-Type"],
+}));
+
 
 // --------------------
 // Serve Frontend Files
