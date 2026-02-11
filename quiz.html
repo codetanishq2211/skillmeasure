@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Skill Measure Quiz</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="container">
+  <h2 id="question">Loading...</h2>
+
+  <div class="progress">
+    <div id="bar"></div>
+  </div>
+
+  <div id="options"></div>
+
+  <button id="nextBtn" onclick="nextQuestion()">Next</button>
+</div>
+
+<script>
+let quiz = [];
+let index = 0;
+let score = 0;
+let correctStreak = 0;
+
+window.onload = () => {
+  const stored = localStorage.getItem("quiz");
+  console.log("Stored quiz:", stored);
+
+  quiz = JSON.parse(stored || "[]");
+
+  if (quiz.length === 0) {
+    alert("⚠️ Quiz empty! Please upload resume again.");
+    window.location.href = "upload.html";
+    return;
+  }
+
+  showQuestion();
+};
+
+function showQuestion() {
+  if (index >= quiz.length) {
+    document.getElementById("question").innerText =
+      "🎉 Quiz Complete! Score: " + score + "/" + quiz.length;
+    document.getElementById("options").innerHTML = 
+      "<div class='completion-message'>" +
+      "<p>Starting coding round based on your skills...</p>" +
+      "<button onclick='startCodingRound()' style='margin-top: 20px; padding: 10px 20px; background: #00f2fe; color: #000; border: none; border-radius: 5px; cursor: pointer;'>🚀 Start Coding Round</button>" +
+      "</div>";
+    document.getElementById("nextBtn").style.display = "none";
+    return;
+  }
+
+  const q = quiz[index];
+  document.getElementById("question").innerText = q.q;
+
+  document.getElementById("bar").style.width =
+    ((index / quiz.length) * 100) + "%";
+
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+
+  q.options.forEach(opt => {
+    const div = document.createElement("div");
+    div.className = "option";
+    div.innerHTML =
+      `<input type="radio" name="opt" value="${opt}"> ${opt}`;
+    optionsDiv.appendChild(div);
+  });
+}
+
+function nextQuestion() {
+  const selected = document.querySelector('input[name="opt"]:checked');
+  if (!selected) {
+    alert("Please select an answer!");
+    return;
+  }
+
+  const answer = selected.value;
+  const q = quiz[index];
+  if (answer === q.answer) {
+    score++;
+    correctStreak++;
+  } else {
+    correctStreak = 0;
+  }
+
+  index++;
+  showQuestion();
+}
+
+function startCodingRound() {
+  window.location.href = "coding.html";
+}
+
+/* Particles */
+const particleBox = document.getElementById("particles");
+for (let i = 0; i < 40; i++) {
+  const p = document.createElement("div");
+  p.className = "particle";
+  p.style.left = Math.random() * 100 + "vw";
+  p.style.animationDuration = (5 + Math.random() * 12) + "s";
+  p.style.opacity = Math.random();
+  particleBox.appendChild(p);
+}
+</script>
+
+</body>
+</html>

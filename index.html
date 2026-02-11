@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Skill Measure AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="container">
+  <h2>⚡ Skill Measure AI</h2>
+  <p class="subtext">Upload your resume to analyze futuristic skill profile</p>
+
+  <div class="card">
+    <form id="form">
+      <input type="file" name="resume" required />
+      <button type="submit">Analyze Resume</button>
+    </form>
+  </div>
+
+  <div id="skillsBox" class="card skill-box"></div>
+  <button id="startBtn" style="display:none;">🚀 Start AI Quiz</button>
+</div>
+
+<script>
+let quizData = [];
+let skills = [];
+let codingChallenges = [];
+
+document.getElementById("form").onsubmit = async (e) => {
+  e.preventDefault();
+  const button = e.target.querySelector("button");
+  const originalText = button.textContent;
+  button.textContent = "Analyzing...";
+  button.disabled = true;
+
+  try {
+    const formData = new FormData(e.target);
+
+    const res = await fetch("http://localhost:3000/upload-resume", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error(`Server error: ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    console.log("FULL RESPONSE:", data);   // 👈 DEBUG
+
+    // Handle error response
+    if (data.status === "error") {
+      alert("❌ Error: " + (data.message || "Unknown error"));
+      button.textContent = originalText;
+      button.disabled = false;
+      return;
+    }
+
+    // Get skills, quiz, and coding challenges
+    skills = data.skills_found || [];
+    quizData = data.quiz || [];
+    codingChallenges = data.coding_challenges || [];
+
+    // Always show skills if found
+    if (skills.length > 0) {
+      const skillsHTML = skills
+        .map(s => `<span>${s}</span>`)
+        .join("");
+
+      document.getElementById("skillsBox").innerHTML =
+        "<h3>🧠 Detected Skills (" + skills.length + ")</h3>" + skillsHTML;
+    } else {
+      document.getElementById("skillsBox").innerHTML =
+        "<h3>⚠️ No Skills Detected</h3><p>Try uploading a resume with technical skills mentioned.</p>";
+    }
+
+    // Show quiz button only if quiz is available
+    if (quizData && quizData.length > 0) {
+      document.getElementById("startBtn").style.display = "block";
+    } else {
+      document.getElementById("startBtn").style.display = "none";
+      if (skills.length > 0) {
+        alert("⚠️ Skills detected but no quiz questions available for these skills.");
+      }
+    }
+
+  } catch (error) {
+    console.error("Upload error:", error);
+    alert("❌ Failed to upload resume: " + error.message);
+  } finally {
+    button.textContent = originalText;
+    button.disabled = false;
+  }
+};
+
+document.getElementById("startBtn").onclick = () => {
+  console.log("Saving quiz to localStorage:", quizData);
+  localStorage.setItem("quiz", JSON.stringify(quizData));
+  localStorage.setItem("coding_challenges", JSON.stringify(codingChallenges));
+  localStorage.setItem("skills", JSON.stringify(skills));
+  window.location.href = "quiz.html";
+};
+
+// Initialize particles
+window.onload = () => {
+  const particleBox = document.getElementById("particles");
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.animationDuration = (5 + Math.random() * 12) + "s";
+    p.style.opacity = Math.random();
+    particleBox.appendChild(p);
+  }
+};
+</script>
+</body>
+</html>
