@@ -16,25 +16,28 @@ import os
 # --------------------------------------------
 # SIMPLE TEXT EXTRACTION (NO OCR)
 # --------------------------------------------
-def extract_text(pdf_path: str) -> str:
-    """
-    Simple text extraction for deployment.
-    This reads raw bytes and decodes text.
-    OCR is disabled on Render Free tier.
-    Works best for text-based PDFs.
-    """
-    try:
-        print(f"📂 Reading file: {pdf_path}")
-        with open(pdf_path, "rb") as f:
-            raw = f.read()
+import pdfplumber
 
-        text = raw.decode("latin-1", errors="ignore")
-        print(f"✅ Extracted {len(text)} characters")
-        return text
+def extract_text(pdf_path: str) -> str:
+    try:
+        print(f"📂 Extracting via pdfplumber: {pdf_path}")
+
+        full_text = ""
+
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+
+        print(f"✅ Extracted {len(full_text)} characters")
+        return full_text
 
     except Exception as e:
-        print("❌ Text extraction failed:", e)
+        print("❌ PDF extraction failed:", e)
         return ""
+
+
 
 
 # --------------------------------------------
