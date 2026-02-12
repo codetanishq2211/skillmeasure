@@ -74,13 +74,19 @@ app.post("/upload-resume", upload.single("resume"), async (req, res) => {
     const stat = fs.statSync(absolutePath);
     console.log("📦 File size:", stat.size);
 
-    const response = await axios.post(
+    const FormData = require("form-data");
+
+const form = new FormData();
+form.append("file", fs.createReadStream(absolutePath));
+
+const response = await axios.post(
   "https://skillmeasure-python.onrender.com/analyze",
+  form,
   {
-    path: absolutePath
-  },
-  {
-    timeout: 30000
+    headers: form.getHeaders(),
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+    timeout: 60000
   }
 );
 

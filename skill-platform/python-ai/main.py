@@ -39,50 +39,34 @@ def home():
 # -----------------------------
 # MAIN ANALYZE API
 # -----------------------------
+from fastapi import UploadFile, File
+
 @app.post("/analyze")
-def analyze(request: AnalyzeRequest):
-    """
-    Receives a resume PDF path (or raw text), extracts skills,
-    and generates relevant assessments.
-    """
+async def analyze(file: UploadFile = File(...)):
     try:
-        if request.path:
-            full_text = extract_text(request.path)
-        elif request.text:
-            full_text = request.text
-        else:
-            raise HTTPException(status_code=400, detail="Request must include either 'path' or 'text'")
+        contents = await file.read()
 
-        if not full_text or len(full_text.strip()) < 10:
-            raise HTTPException(
-                status_code=400,
-                detail="Could not extract meaningful text from the resume PDF (image-based, encrypted, or unreadable).",
-            )
+        temp_path = f"/tmp/{file.filename}"
 
-        # 1. Extract skills using your NLP/OCR logic
-        # This replaces the hardcoded ["Python", "JavaScript"]
+        with open(temp_path, "wb") as f:
+            f.write(contents)
+
+        full_text = extract_text(temp_path)
+
         skills_found = extract_skills(full_text)
-        
-        # 2. Generate Quiz based on detected skills
         quiz_data = generate_quiz(skills_found)
-        
-        # 3. Generate Coding Challenges
         coding_data = generate_coding_challenges(skills_found)
-
-        print(f"Successfully processed resume. Skills detected: {skills_found}")
 
         return {
             "status": "success",
             "skills_found": skills_found,
             "quiz": quiz_data,
-            "coding_challenges": coding_data,
-            "text_length": len(full_text),
-            "text_preview": full_text[:500] + "..." if len(full_text) > 500 else full_text
+            "coding_challenges": coding_data
         }
 
     except Exception as e:
-        print(f"Error during analysis: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # -----------------------------
 # SERVER STARTUP
