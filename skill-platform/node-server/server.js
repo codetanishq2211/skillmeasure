@@ -77,7 +77,7 @@ app.post("/upload-resume", upload.single("resume"), async (req, res) => {
     const response = await axios.post(
   "https://skillmeasure-python.onrender.com/analyze",
   {
-    text: absolutePath
+    path: absolutePath
   },
   {
     timeout: 30000
