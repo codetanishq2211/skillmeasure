@@ -121,3 +121,22 @@ def extract_name(text: str) -> str:
             if all(word[0].isupper() for word in words if word):
                 return line
     return "Unknown Student"
+
+
+def extract_skills(text: str) -> list:
+    """
+    Extract skills from resume text using keyword matching.
+    Returns a list of normalized skill names.
+    """
+    text_lower = text.lower()
+    found_skills = set()
+
+    # Check for exact matches first
+    for skill in SKILLS_DB:
+        if skill.lower() in text_lower:
+            # Use normalized name if available
+            normalized = SKILL_MAPPING.get(skill.lower(), skill.title())
+            found_skills.add(normalized)
+
+    # Remove duplicates and sort
+    return sorted(list(found_skills))

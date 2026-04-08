@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: skillmeasure-node-server
+    env: node
+    branch: main
+    root: skill-platform/node-server
+    buildCommand: npm install && npm rebuild
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_DEFAULT_VERSION
+        value: "9"
+      - key: PYTHON_BACKEND_URL
+        value: "https://skillmeasure-python-server.onrender.com"
+  - type: web
+    name: skillmeasure-python-server
+    env: python
+    branch: main
+    root: skill-platform/python-ai
+    buildCommand: pip install -r render_requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"

@@ -15,12 +15,15 @@ const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || "http://localhost:8
 // ===============================
 // Database Setup (SQLite)
 // ===============================
-const DB_FILE = "resumes.db";
+const DB_FILE = path.join(__dirname, "resumes.db");
+console.log("📁 Database file path:", DB_FILE);
+
 const db = new sqlite3.Database(DB_FILE, (err) => {
   if (err) {
     console.error("❌ Database connection error:", err);
+    process.exit(1); // Exit if DB connection fails
   } else {
-    console.log("✅ Connected to SQLite database");
+    console.log("✅ Connected to SQLite database at:", DB_FILE);
     initializeDatabase();
   }
 });
@@ -43,6 +46,7 @@ function initializeDatabase() {
   `, (err) => {
     if (err) {
       console.error("❌ Error creating resumes table:", err);
+      process.exit(1);
     } else {
       console.log("✅ Resumes table ready");
     }
@@ -65,17 +69,26 @@ app.use(express.static(frontendPath));
 // ===============================
 // Multer Storage (PDF Upload)
 // ===============================
+const UPLOADS_DIR = path.join(__dirname, "uploads");
+
+// Ensure uploads directory exists
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    console.log("✅ Created uploads directory:", UPLOADS_DIR);
+  }
+} catch (error) {
+  console.error("❌ Failed to create uploads directory:", error);
+  process.exit(1);
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = "uploads";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-    }
-    cb(null, dir);
+    cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const filename = Date.now() + ext;
+    const filename = Date.now() + "-" + Math.round(Math.random() * 1E9) + ext;
     cb(null, filename);
   }
 });
@@ -92,8 +105,30 @@ const upload = multer({
 });
 
 // ===============================
-// Health Check
+// Health Check (Critical for Render)
 // ===============================
+app.get("/health", (req, res) => {
+  // Check database connectivity
+  db.get("SELECT 1", (err) => {
+    if (err) {
+      console.error("❌ Health check failed - DB error:", err);
+      return res.status(503).json({
+        status: "unhealthy",
+        message: "Database connection failed",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json({
+      status: "healthy",
+      message: "Server is running",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  });
+});
+
 app.get("/api", (req, res) => {
   res.send("Node Backend Running 🚀");
 });
@@ -138,7 +173,7 @@ app.post("/upload-resume", upload.single("resume"), async (req, res) => {
         headers: form.getHeaders(),
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        timeout: 0 // 🔥 IMPORTANT (No timeout limit)
+        timeout: 30000 // 30 second timeout instead of infinite
       }
     );
 
@@ -177,6 +212,16 @@ app.post("/upload-resume", upload.single("resume"), async (req, res) => {
 
   } catch (error) {
     console.error("❌ FULL ERROR:", error);
+
+    // Clean up uploaded file on error
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log("🗑️ Cleaned up failed upload:", req.file.path);
+      } catch (cleanupError) {
+        console.error("⚠️ Failed to cleanup file:", cleanupError);
+      }
+    }
 
     if (error.response) {
       return res.status(error.response.status).json({
@@ -296,10 +341,78 @@ app.post("/api/update-scores", express.json(), (req, res) => {
 });
 
 // ===============================
-// Start Server
+// Periodic Cleanup (Prevent Disk Space Issues)
 // ===============================
-const PORT = process.env.PORT || 3000;
+setInterval(() => {
+  try {
+    const files = fs.readdirSync(UPLOADS_DIR);
+    const now = Date.now();
+    let cleanedCount = 0;
 
-app.listen(PORT, () => {
+    files.forEach(file => {
+      const filePath = path.join(UPLOADS_DIR, file);
+      const stats = fs.statSync(filePath);
+
+      // Delete files older than 24 hours
+      if (now - stats.mtime.getTime() > 24 * 60 * 60 * 1000) {
+        fs.unlinkSync(filePath);
+        cleanedCount++;
+      }
+    });
+
+    if (cleanedCount > 0) {
+      console.log(`🗑️ Cleaned up ${cleanedCount} old files from uploads directory`);
+    }
+  } catch (error) {
+    console.error("❌ Error during cleanup:", error);
+  }
+}, 60 * 60 * 1000); // Every hour
+
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
+});
+
+// ===============================
+// Graceful Shutdown
+// ===============================
+process.on('SIGTERM', () => {
+  console.log('📴 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    db.close((err) => {
+      if (err) {
+        console.error('❌ Error closing database:', err);
+        process.exit(1);
+      }
+      console.log('✅ Database closed');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('📴 SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    db.close((err) => {
+      if (err) {
+        console.error('❌ Error closing database:', err);
+        process.exit(1);
+      }
+      console.log('✅ Database closed');
+      process.exit(0);
+    });
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });

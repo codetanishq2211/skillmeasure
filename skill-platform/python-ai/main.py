@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
+import sqlite3
 import subprocess
 import sys
 
 # ---------------------------------------------------------
-# 1. FORCE INSTALL MULTIPART (FastAPI se pehle hona chahiye)
-# ---------------------------------------------------------
-try:
-    import multipart
-except ImportError:
-    print("Installing python-multipart...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "python-multipart"])
-
-# ---------------------------------------------------------
-# 2. STANDARD IMPORTS
+# STANDARD IMPORTS
 # ---------------------------------------------------------
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, HTTPException
