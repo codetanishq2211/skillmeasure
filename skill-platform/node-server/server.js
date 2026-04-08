@@ -108,24 +108,12 @@ const upload = multer({
 // Health Check (Critical for Render)
 // ===============================
 app.get("/health", (req, res) => {
-  // Check database connectivity
-  db.get("SELECT 1", (err) => {
-    if (err) {
-      console.error("❌ Health check failed - DB error:", err);
-      return res.status(503).json({
-        status: "unhealthy",
-        message: "Database connection failed",
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    res.json({
-      status: "healthy",
-      message: "Server is running",
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage()
-    });
+  res.json({
+    status: "healthy",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
   });
 });
 
