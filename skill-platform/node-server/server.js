@@ -368,6 +368,11 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000); // Every hour
 
+// ===============================
+// Start Server
+// ===============================
+const PORT = process.env.PORT || 3000;
+
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
